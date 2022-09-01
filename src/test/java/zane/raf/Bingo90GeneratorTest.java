@@ -1,14 +1,10 @@
 package zane.raf;
 
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collections;
-import java.util.LinkedList;
 import java.util.List;
-import java.util.Map;
 import java.util.Objects;
 import java.util.function.Supplier;
-import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
 import org.junit.jupiter.api.Test;
@@ -22,24 +18,22 @@ import static zane.raf.Bingo90Generator.getFreqOfBlanksPerColumn;
 import static zane.raf.Bingo90Generator.getPool;
 
 class Bingo90GeneratorTest {
+    private static final int NUMBER_OF_REPETITIONS = 100_000;
 
     @Test
     void testFillRow() throws Exception {
-        for (int i = 0; i < 100_000; i++) { verifyRow( fillRow(getPool()) ); }
+        for (int i = 0; i < NUMBER_OF_REPETITIONS; i++) { verifyRow( fillRow(getPool()) ); }
     }
 
     @Test
     void testBalanceTicket() throws Exception {
-        for (int i = 0; i < 100_000; i++) {
+        for (int i = 0; i < NUMBER_OF_REPETITIONS; i++) {
             final var pool = getPool();
 
-            final Supplier<ArrayList<Integer>> f = () -> IntStream.range(0, 9).mapToObj(idx -> {
-                if ((idx == 2) || (idx == 4) || (idx == 7) || (idx == 8)) {
-                    return null;
-                } else {
-                    return pool.get(idx).pop();
-                }
-            }).collect(toCollection(ArrayList::new));
+            final Supplier<ArrayList<Integer>> f = () -> IntStream
+                .range(0, 9)
+                .mapToObj(idx -> ((idx == 2) || (idx == 4) || (idx == 7) || (idx == 8)) ? null : pool.get(idx).pop())
+                .collect(toCollection(ArrayList::new));
 
             final var unbalancedTicket = new Bingo90Generator.Ticket(f.get(), f.get(), f.get());
 

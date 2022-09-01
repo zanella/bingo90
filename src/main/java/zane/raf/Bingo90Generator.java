@@ -122,15 +122,15 @@ public final class Bingo90Generator {
             System.out.println(ticket.row3);
             System.out.println("\nfreqOfBlanksPerColumn: " + freqOfBlanksPerColumn); */
 
+            final var unmodifiableColumns = new HashSet<Integer>();
+            unmodifiableColumns.addAll(freqOfBlanksPerColumn.getOrDefault(3, emptySet()));
+            unmodifiableColumns.addAll(freqOfBlanksPerColumn.getOrDefault(2, emptySet()));
+
             freqOfBlanksPerColumn
                 .get(3)
                 .stream()
                 .sorted(Comparator.reverseOrder()) // Try to fill the last column first
                 .forEach(invalidColumnIdx -> {
-                    final var unmodifiableColumns = new HashSet<Integer>();
-                    unmodifiableColumns.addAll(freqOfBlanksPerColumn.getOrDefault(3, emptySet()));
-                    unmodifiableColumns.addAll(freqOfBlanksPerColumn.getOrDefault(2, emptySet()));
-
                     final var row = getRandomRow(ticket);
 
                     // Insert a new value: [1, null, 3] -> [1, X, 3]
@@ -143,24 +143,26 @@ public final class Bingo90Generator {
 
                     // Return to pool
                     pool.get(columnToModify).add( row.get(columnToModify) );
-                    //pool.get(columnToModify).add( rowToModify.get(columnToModify) );
 
-                    // Add a blank space: [1, X, null]
+                    // Add a blank space: columnRand = 2 -> [1, X, null]
                     row.set(columnToModify, null);
-                    //rowToModify.set(columnToModify, null);
 
-                    // Update frequency map
+                    // Update frequency map of usable columns
                     for (int freqOfBlanks = 1; freqOfBlanks >= 0; freqOfBlanks--) {
                         final var s = freqOfBlanksPerColumn.getOrDefault(freqOfBlanks, emptySet());
 
                         if (s.contains(columnToModify)) {
                             s.remove(columnToModify);
 
-                            final var incFreqSet = freqOfBlanksPerColumn.getOrDefault(freqOfBlanks + 1, new HashSet<>());
+                            final var newFreq = freqOfBlanks + 1;
+
+                            final var incFreqSet = freqOfBlanksPerColumn.getOrDefault(newFreq, new HashSet<>());
 
                             incFreqSet.add(columnToModify);
 
-                            freqOfBlanksPerColumn.put(freqOfBlanks + 1, incFreqSet);
+                            freqOfBlanksPerColumn.put(newFreq, incFreqSet);
+
+                            if (newFreq == 2) { unmodifiableColumns.add(columnToModify); }
                         }
                     }
                 });
