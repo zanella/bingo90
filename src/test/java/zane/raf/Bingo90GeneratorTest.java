@@ -21,54 +21,44 @@ import static zane.raf.Bingo90Generator.getFreqOfBlanksPerColumn;
 import static zane.raf.Bingo90Generator.getPool;
 
 class Bingo90GeneratorTest {
-    private static final int NUMBER_OF_REPETITIONS = 1_000_000;
-
     @Test
     void testFillRow() {
-        for (int i = 0; i < NUMBER_OF_REPETITIONS; i++) {
-            final var pool = getPool();
-
-            for (int j = 0; j < 18; j++) { verifyRow( fillRow(pool) ); }
-        }
+        verifyRow( fillRow(getPool()) );
     }
 
     @Test
     void testBalanceTicket() {
-        for (int i = 0; i < NUMBER_OF_REPETITIONS; i++) {
-            final var pool = getPool();
+        final var pool = getPool();
 
-            final Supplier<ArrayList<Integer>> f = () -> IntStream
-                .range(0, 9)
-                .mapToObj(idx -> ((idx == 2) || (idx == 4) || (idx == 7) || (idx == 8)) ? null : pool.get(idx).pop())
-                .collect(toCollection(ArrayList::new));
+        final Supplier<ArrayList<Integer>> f = () -> IntStream
+            .range(0, 9)
+            .mapToObj(idx -> ((idx == 2) || (idx == 4) || (idx == 7) || (idx == 8)) ? null : pool.get(idx).pop())
+            .collect(toCollection(ArrayList::new));
 
-            final var unbalancedTicket = new Bingo90Generator.Ticket(f.get(), f.get(), f.get());
+        final var unbalancedTicket = new Bingo90Generator.Ticket(f.get(), f.get(), f.get());
 
-            final var ticket = balanceTicket(pool, unbalancedTicket);
+        assertEquals(3, Collections.max(getFreqOfBlanksPerColumn(unbalancedTicket).keySet()));
 
-            verifyRow(ticket.row1());
-            verifyRow(ticket.row2());
-            verifyRow(ticket.row3());
+        final var ticket = balanceTicket(pool, unbalancedTicket);
 
-            assertTrue(Collections.max(getFreqOfBlanksPerColumn(ticket).keySet()) < 3);
-        }
+        verifyTicket(ticket);
+
+        assertTrue(Collections.max(getFreqOfBlanksPerColumn(ticket).keySet()) < 3);
     }
 
     @Test
     void testGenerateStrip() {
         IntStream
-            .range(0, NUMBER_OF_REPETITIONS)
+            .range(0, 100_000)
             .parallel()
             .forEach(i -> {
                 final var pool = getPool();
 
                 final var strip = generateStrip(pool);
 
-                Arrays.asList(strip.t1(), strip.t2(), strip.t3(), strip.t4(), strip.t5(), strip.t6()).forEach(ticket -> {
-                    verifyRow(ticket.row1());
-                    verifyRow(ticket.row2());
-                    verifyRow(ticket.row3());
-                });
+                Arrays
+                    .asList(strip.t1(), strip.t2(), strip.t3(), strip.t4(), strip.t5(), strip.t6())
+                    .forEach(this::verifyTicket);
 
                 assertEquals(0, pool.values().stream().mapToInt(LinkedList::size).sum());
             });
@@ -87,6 +77,12 @@ class Bingo90GeneratorTest {
 
     ////////////////////////////////////////////////
 
+    private void verifyTicket(final Bingo90Generator.Ticket ticket) {
+        verifyRow(ticket.row1());
+        verifyRow(ticket.row2());
+        verifyRow(ticket.row3());
+    }
+
     private void verifyRow(final List<Integer> row) {
         if (row.size() != 9) throw new RuntimeException("Invalid size (!= 9): " + row);
 
@@ -95,6 +91,6 @@ class Bingo90GeneratorTest {
             .filter(Objects::isNull)
             .count();
 
-        if (c > 4) throw new RuntimeException("Invalid number of blanks: " + row);
+        if (c != 4) throw new RuntimeException("Invalid number of blanks: " + row);
     }
 }
