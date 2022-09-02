@@ -1,9 +1,11 @@
 package zane.raf;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashSet;
+import java.util.LinkedHashSet;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
@@ -18,7 +20,6 @@ import static java.util.Collections.emptySet;
 import static java.util.stream.Collectors.groupingBy;
 import static java.util.stream.Collectors.mapping;
 import static java.util.stream.Collectors.toCollection;
-import static java.util.stream.Collectors.toSet;
 
 public final class Bingo90Generator {
     private static final List<Integer> FIRST_COLUMN_SPACE = IntStream.rangeClosed(1, 9).boxed().toList();
@@ -35,7 +36,12 @@ public final class Bingo90Generator {
 
     private Bingo90Generator() {}
 
-    record Ticket(ArrayList<Integer> row1, ArrayList<Integer> row2, ArrayList<Integer> row3) {}
+    record Ticket(ArrayList<Integer> row1, ArrayList<Integer> row2, ArrayList<Integer> row3) {
+        @Override
+        public String toString() {
+            return "Ticket{" + "\nrow1=" + row1 + "\nrow2=" + row2 + "\nrow3=" + row3 + '}';
+        }
+    }
 
     record Strip(Ticket t1, Ticket t2, Ticket t3, Ticket t4, Ticket t5, Ticket t6)  {}
 
@@ -47,37 +53,35 @@ public final class Bingo90Generator {
         return l;
     }
 
+    private static final List<Integer> NULLED_ROW = Arrays.asList(null, null, null, null, null, null, null, null, null);
+
+    private static final List<Integer> L8 = IntStream.range(0, 9).boxed().toList();
+
     /**
      *
      * @param pool Available numbers
      * @return Returns a "valid" row: 5 numbers + 4 blank spaces
      */
     static ArrayList<Integer> fillRow(final Map<Integer, LinkedList<Integer>> pool) {
-        final var row = new ArrayList<Integer>(9);
+        final var row = new ArrayList<>(NULLED_ROW);
 
-        var numberOfBlanks = 0;
+        final var columnsToFill = new LinkedList<>(L8);
+        Collections.shuffle(columnsToFill);
 
-        for (int i = 0; i < 9; i++) {
-            final var l = pool.get(i);
+        final var minPoolSize = pool.values().stream().mapToInt(LinkedList::size).min().orElseThrow();
 
-            final var v = l.isEmpty() ? null : l.pop();
+        pool
+            .entrySet()
+            .stream()
+            .filter(e -> ((e.getValue().size() - minPoolSize) >= 1) )
+            .sorted((x, y) -> Integer.compare(y.getValue().size(), x.getValue().size())) // inverted, larger pools first
+            .forEach(e -> columnsToFill.addFirst(e.getKey()));
 
-            if (Objects.isNull(v)) numberOfBlanks++;
-
-            row.add(v);
-        }
-
-        while (numberOfBlanks < 4) {
-            final var idx = random.nextInt(0, 9);
-
-            if ( Objects.nonNull(row.get(idx)) ) {
-                pool.get(idx).add( row.get(idx) );
-
-                row.set(idx, null);
-
-                numberOfBlanks++;
-            }
-        }
+        new LinkedHashSet<>(columnsToFill) // gets rid of repeated columns
+            .stream()
+            .filter(idx -> !pool.get(idx).isEmpty())
+            .limit(5)
+            .forEach(idx -> row.set(idx, pool.get(idx).pop()));
 
         return row;
     }
@@ -116,12 +120,6 @@ public final class Bingo90Generator {
          * [null], [null],  [Y],   [B] | 1, 0 -> Can lose a number and keep balance
          * [null],  [X],    [Z],   [C] | */
         if (freqOfBlanksPerColumn.containsKey(3)) {
-            /* System.out.println("Invalid ticket BEFORE: ");
-            System.out.println(ticket.row1);
-            System.out.println(ticket.row2);
-            System.out.println(ticket.row3);
-            System.out.println("\nfreqOfBlanksPerColumn: " + freqOfBlanksPerColumn); */
-
             final var unmodifiableColumns = new HashSet<Integer>();
             unmodifiableColumns.addAll(freqOfBlanksPerColumn.getOrDefault(3, emptySet()));
             unmodifiableColumns.addAll(freqOfBlanksPerColumn.getOrDefault(2, emptySet()));
@@ -139,7 +137,10 @@ public final class Bingo90Generator {
                     // Pick column to poke a blank
                     int columnToModify = unmodifiableColumns.stream().findFirst().orElseThrow();
 
-                    while ( unmodifiableColumns.contains(columnToModify) ) { columnToModify = random.nextInt(0, 9); }
+                    // If the random column is one of not-to-be-modified or the row is already null on it
+                    while (unmodifiableColumns.contains(columnToModify) || Objects.isNull( row.get(columnToModify) )) {
+                        columnToModify = random.nextInt(0, 9);
+                    }
 
                     // Return to pool
                     pool.get(columnToModify).add( row.get(columnToModify) );
@@ -166,12 +167,6 @@ public final class Bingo90Generator {
                         }
                     }
                 });
-
-            /* System.out.println("\n\nInvalid ticket AFTER: ");
-            System.out.println(ticket.row1);
-            System.out.println(ticket.row2);
-            System.out.println(ticket.row3);
-            System.out.println("\nfreqOfBlanksPerColumn: " + freqOfBlanksPerColumn); */
         }
 
         return ticket;
@@ -187,13 +182,18 @@ public final class Bingo90Generator {
         );
     }
 
+    static Strip generateStrip(final Map<Integer, LinkedList<Integer>> pool) {
+        final var t1 = balanceTicket(pool, new Ticket(fillRow(pool), fillRow(pool), fillRow(pool)));
+        final var t2 = balanceTicket(pool, new Ticket(fillRow(pool), fillRow(pool), fillRow(pool)));
+        final var t3 = balanceTicket(pool, new Ticket(fillRow(pool), fillRow(pool), fillRow(pool)));
+        final var t4 = balanceTicket(pool, new Ticket(fillRow(pool), fillRow(pool), fillRow(pool)));
+        final var t5 = balanceTicket(pool, new Ticket(fillRow(pool), fillRow(pool), fillRow(pool)));
+        final var t6 = balanceTicket(pool, new Ticket(fillRow(pool), fillRow(pool), fillRow(pool)));
+
+        return new Strip(t1, t2, t3, t4, t5, t6);
+    }
+
     public static Strip generateStrip() {
-        final var m = getPool();
-
-        final var ticket = balanceTicket(m, new Ticket(fillRow(m), fillRow(m), fillRow(m)) );
-
-        random.nextInt(1, 4);
-
-        return null;
+        return generateStrip(getPool());
     }
 }
