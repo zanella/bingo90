@@ -1,11 +1,11 @@
 package zane.raf;
 
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collections;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Objects;
+import java.util.Random;
 import java.util.function.Supplier;
 import java.util.stream.IntStream;
 
@@ -39,11 +39,7 @@ class Bingo90GeneratorTest {
 
         assertEquals(3, Collections.max(getFreqOfBlanksPerColumn(unbalancedTicket).keySet()));
 
-        final var ticket = balanceTicket(pool, unbalancedTicket);
-
-        verifyTicket(ticket);
-
-        assertTrue(Collections.max(getFreqOfBlanksPerColumn(ticket).keySet()) < 3);
+        verifyTicket( balanceTicket(pool, new Random(), unbalancedTicket) );
     }
 
     @Test
@@ -54,11 +50,13 @@ class Bingo90GeneratorTest {
             .forEach(i -> {
                 final var pool = getPool();
 
-                final var strip = generateStrip(pool);
+                final var strip = generateStrip(pool, new Random());
 
-                Arrays
-                    .asList(strip.t1(), strip.t2(), strip.t3(), strip.t4(), strip.t5(), strip.t6())
+                strip
+                    .tickets()
                     .forEach(this::verifyTicket);
+
+                // System.out.println(strip);
 
                 assertEquals(0, pool.values().stream().mapToInt(LinkedList::size).sum());
             });
@@ -81,6 +79,10 @@ class Bingo90GeneratorTest {
         verifyRow(ticket.row1());
         verifyRow(ticket.row2());
         verifyRow(ticket.row3());
+
+        assertTrue(Collections.max(getFreqOfBlanksPerColumn(ticket).keySet()) < 3, ticket.toString());
+
+        // TODO: verify order of items per column -> ASC
     }
 
     private void verifyRow(final List<Integer> row) {
