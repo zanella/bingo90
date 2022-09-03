@@ -1,4 +1,4 @@
-package zane.raf;
+package zane.raf.bingo_90;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -12,7 +12,6 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Random;
 import java.util.Set;
-import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
 import org.graalvm.collections.Pair;
@@ -22,63 +21,15 @@ import static java.util.stream.Collectors.groupingBy;
 import static java.util.stream.Collectors.mapping;
 import static java.util.stream.Collectors.toCollection;
 
-public final class Bingo90Generator {
-
-    /**
-     * Generates a valid strip, consisting of 6 tickets
-     *
-     * @return a valid {@code Strip}
-     */
-    public static Strip generateStrip() {
-        return generateStrip(getPool(), new Random());
-    }
-
-    ///////////////////////////////////////////////////////////////////////////
-
-    private static final List<Integer> FIRST_COLUMN_SPACE = IntStream.rangeClosed(1, 9).boxed().toList();
-    private static final List<Integer> SECOND_COLUMN_SPACE = IntStream.rangeClosed(10, 19).boxed().toList();
-    private static final List<Integer> THIRD_COLUMN_SPACE = IntStream.rangeClosed(20, 29).boxed().toList();
-    private static final List<Integer> FOURTH_COLUMN_SPACE = IntStream.rangeClosed(30, 39).boxed().toList();
-    private static final List<Integer> FIFTH_COLUMN_SPACE = IntStream.rangeClosed(40, 49).boxed().toList();
-    private static final List<Integer> SIXTH_COLUMN_SPACE = IntStream.rangeClosed(50, 59).boxed().toList();
-    private static final List<Integer> SEVENTH_COLUMN_SPACE = IntStream.rangeClosed(60, 69).boxed().toList();
-    private static final List<Integer> EIGHTH_COLUMN_SPACE = IntStream.rangeClosed(70, 79).boxed().toList();
-    private static final List<Integer> NINTH_COLUMN_SPACE = IntStream.rangeClosed(80, 90).boxed().toList();
-
-    private Bingo90Generator() {}
-
-    record Ticket(ArrayList<Integer> row1, ArrayList<Integer> row2, ArrayList<Integer> row3) {
-        @Override
-        public String toString() {
-            return "Ticket{" + "\nrow1=" + row1 + "\nrow2=" + row2 + "\nrow3=" + row3 + "}\n";
-        }
-    }
-
-    record Strip(List<Ticket> tickets) {
-        @Override
-        public String toString() {
-            return "Strip{\n"
-                + tickets.stream().map(Ticket::toString).collect(Collectors.joining())
-                + "\n}";
-        }
-    }
-
-    /**
-     *
-     * @param space The list to be shuffled
-     * @return A shuffled copy of the received list
-     */
-    private static LinkedList<Integer> shuffleList(final List<Integer> space) {
-        final var l = new LinkedList<>(space);
-
-        Collections.shuffle(l);
-
-        return l;
-    }
-
+record Ticket(ArrayList<Integer> row1, ArrayList<Integer> row2, ArrayList<Integer> row3) {
     private static final List<Integer> NULLED_ROW = Arrays.asList(null, null, null, null, null, null, null, null, null);
 
     private static final List<Integer> COLUMN_INDEXES = IntStream.range(0, 9).boxed().toList();
+
+    static Ticket of(final Map<Integer, LinkedList<Integer>> pool, final Random random) {
+        return new Ticket(fillRow(pool), fillRow(pool), fillRow(pool))
+            .balanceTicket(pool, random);
+    }
 
     /**
      *
@@ -101,43 +52,24 @@ public final class Bingo90Generator {
             .forEach(e -> columnsToFill.addFirst(e.getKey()));
 
         new LinkedHashSet<>(columnsToFill) // gets rid of repeated columns
-            .stream()
-            .filter(idx -> !pool.get(idx).isEmpty())
-            .limit(5)
-            .forEach(idx -> row.set(idx, pool.get(idx).pop()));
+                                           .stream()
+                                           .filter(idx -> !pool.get(idx).isEmpty())
+                                           .limit(5)
+                                           .forEach(idx -> row.set(idx, pool.get(idx).pop()));
 
         return row;
     }
 
     /**
-     *
-     * @param random RNG
-     * @param ticket {@code Ticket} to get a random row from
-     * @return a random row
-     */
-    private static ArrayList<Integer> getRandomRow(final Random random, final Ticket ticket) {
-        final var rowIdx = random.nextInt(1, 4);
-
-        return switch (rowIdx) {
-            case 1 -> ticket.row1;
-            case 2 -> ticket.row2;
-            case 3 -> ticket.row3;
-            default -> throw new IllegalStateException("Unexpected value: " + rowIdx);
-        };
-    }
-
-    /**
-     *
-     * @param ticket .
      * @return A map consisting of "number of times a blank happens in the column" (frequency) -> column's index
      */
-    static Map<Integer, Set<Integer>> getFreqOfBlanksPerColumn(final Ticket ticket) {
+    Map<Integer, Set<Integer>> getFreqOfBlanksPerColumn() {
         return IntStream
             .range(0, 9)
             .mapToObj(idx -> {
-                final var blanks = (Objects.isNull(ticket.row1.get(idx)) ? 1 : 0)
-                    + (Objects.isNull(ticket.row2.get(idx)) ? 1 : 0)
-                    + (Objects.isNull(ticket.row3.get(idx)) ? 1 : 0);
+                final var blanks = (Objects.isNull(row1.get(idx)) ? 1 : 0)
+                    + (Objects.isNull(row2.get(idx)) ? 1 : 0)
+                    + (Objects.isNull(row3.get(idx)) ? 1 : 0);
 
                 return Pair.create(idx, blanks);
             })
@@ -147,16 +79,31 @@ public final class Bingo90Generator {
     }
 
     /**
+     *
+     * @param random RNG
+     * @return a random row
+     */
+    private ArrayList<Integer> getRandomRow(final Random random) {
+        final var rowIdx = random.nextInt(1, 4);
+
+        return switch (rowIdx) {
+            case 1 -> row1;
+            case 2 -> row2;
+            case 3 -> row3;
+            default -> throw new IllegalStateException("Unexpected value: " + rowIdx);
+        };
+    }
+
+    /**
      * Checks that there are no invalid columns (w/ 3 blanks), and if there are modify the ticket to prevent it.
      * Reorders the column's items so that they are show on an ascending order
      *
      * @param pool available numbers for filling the ticket
      * @param random RNG
-     * @param ticket {@code Ticket}
      * @return the ticket received, only returned to enable a fluent API
      */
-    static Ticket balanceTicket(final Map<Integer, LinkedList<Integer>> pool, final Random random, final Ticket ticket) {
-        final var freqOfBlanksPerColumn = getFreqOfBlanksPerColumn(ticket);
+    Ticket balanceTicket(final Map<Integer, LinkedList<Integer>> pool, final Random random) {
+        final var freqOfBlanksPerColumn = getFreqOfBlanksPerColumn();
 
         /*    3      2       1      0  | 3 -> Has to gain a number
          * [null], [null], [null], [A] | 2 -> Cannot lose a number
@@ -172,7 +119,7 @@ public final class Bingo90Generator {
                 .stream()
                 .sorted(Comparator.reverseOrder()) // Try to fill the last column first
                 .forEach(invalidColumnIdx -> {
-                    final var row = getRandomRow(random, ticket);
+                    final var row = getRandomRow(random);
 
                     // Insert a new value: [1, null, 3] -> [1, X, 3]
                     row.set(invalidColumnIdx, pool.get(invalidColumnIdx).pop());
@@ -214,35 +161,11 @@ public final class Bingo90Generator {
 
         // TODO: order columns
 
-        return ticket;
+        return this;
     }
 
-    /**
-     *
-     * @return A map, consisting of: column index -> shuffled list of numbers, valid for said column
-     */
-    static Map<Integer, LinkedList<Integer>> getPool() {
-        return Map.of(
-            0, shuffleList(FIRST_COLUMN_SPACE),     1, shuffleList(SECOND_COLUMN_SPACE),
-            2, shuffleList(THIRD_COLUMN_SPACE),     3, shuffleList(FOURTH_COLUMN_SPACE),
-            4, shuffleList(FIFTH_COLUMN_SPACE),     5, shuffleList(SIXTH_COLUMN_SPACE),
-            6, shuffleList(SEVENTH_COLUMN_SPACE),   7, shuffleList(EIGHTH_COLUMN_SPACE),
-            8, shuffleList(NINTH_COLUMN_SPACE)
-        );
-    }
-
-    /**
-     * Generates a valid strip
-     * @param pool the pool from which the numbers to fill the tickets will be acquired
-     * @return a valid {@code Strip}
-     */
-    static Strip generateStrip(final Map<Integer, LinkedList<Integer>> pool, final Random random) {
-        final var l = IntStream
-            .range(0, 6)
-            .mapToObj(i -> new Ticket(fillRow(pool), fillRow(pool), fillRow(pool)))
-            .map(ticket -> balanceTicket(pool, random, ticket))
-            .toList();
-
-        return new Strip(l);
+    @Override
+    public String toString() {
+        return "Ticket{" + "\nrow1=" + row1 + "\nrow2=" + row2 + "\nrow3=" + row3 + "}\n";
     }
 }
