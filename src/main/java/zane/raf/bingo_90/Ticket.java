@@ -12,6 +12,7 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Random;
 import java.util.Set;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.IntStream;
 
 import org.graalvm.collections.Pair;
@@ -24,11 +25,17 @@ import static java.util.stream.Collectors.toCollection;
 record Ticket(ArrayList<Integer> row1, ArrayList<Integer> row2, ArrayList<Integer> row3) {
     private static final List<Integer> NULLED_ROW = Arrays.asList(null, null, null, null, null, null, null, null, null);
 
-    private static final List<Integer> COLUMN_INDEXES = IntStream.range(0, 9).boxed().toList();
+    static final List<Integer> COLUMN_INDEXES = IntStream.range(0, 9).boxed().toList();
 
+    /**
+     * @param pool Available numbers
+     * @param random RNG
+     * @return A valid {@code Ticket}
+     */
     static Ticket of(final Map<Integer, LinkedList<Integer>> pool, final Random random) {
         return new Ticket(fillRow(pool), fillRow(pool), fillRow(pool))
-            .balanceTicket(pool, random);
+            .balanceTicket(pool, random)
+            .sortColumns();
     }
 
     /**
@@ -42,20 +49,21 @@ record Ticket(ArrayList<Integer> row1, ArrayList<Integer> row2, ArrayList<Intege
         final var columnsToFill = new LinkedList<>(COLUMN_INDEXES);
         Collections.shuffle(columnsToFill);
 
-        final var minPoolSize = pool.values().stream().mapToInt(LinkedList::size).min().orElseThrow();
+        final var minPoolSize = new AtomicInteger(Integer.MAX_VALUE);
+        for (int i = 0; i < 9; i++) { minPoolSize.set( Math.min(minPoolSize.get(), pool.get(i).size()) ); }
 
         pool
             .entrySet()
             .stream()
-            .filter(e -> ((e.getValue().size() - minPoolSize) >= 1) )
+            .filter(e -> ((e.getValue().size() - minPoolSize.get()) >= 1) )
             .sorted((x, y) -> Integer.compare(y.getValue().size(), x.getValue().size())) // inverted, larger pools first
             .forEach(e -> columnsToFill.addFirst(e.getKey()));
 
         new LinkedHashSet<>(columnsToFill) // gets rid of repeated columns
-                                           .stream()
-                                           .filter(idx -> !pool.get(idx).isEmpty())
-                                           .limit(5)
-                                           .forEach(idx -> row.set(idx, pool.get(idx).pop()));
+            .stream()
+            .filter(idx -> !pool.get(idx).isEmpty())
+            .limit(5) // The row is already filled with nulls, only numbers are needed, (9 - 4) -> 5
+            .forEach(columnIdx -> row.set(columnIdx, pool.get(columnIdx).pop()));
 
         return row;
     }
@@ -64,14 +72,14 @@ record Ticket(ArrayList<Integer> row1, ArrayList<Integer> row2, ArrayList<Intege
      * @return A map consisting of "number of times a blank happens in the column" (frequency) -> column's index
      */
     Map<Integer, Set<Integer>> getFreqOfBlanksPerColumn() {
-        return IntStream
-            .range(0, 9)
-            .mapToObj(idx -> {
-                final var blanks = (Objects.isNull(row1.get(idx)) ? 1 : 0)
-                    + (Objects.isNull(row2.get(idx)) ? 1 : 0)
-                    + (Objects.isNull(row3.get(idx)) ? 1 : 0);
+        return COLUMN_INDEXES
+            .stream()
+            .map(columnIndex -> {
+                final var blanks = (Objects.isNull(row1.get(columnIndex)) ? 1 : 0)
+                    + (Objects.isNull(row2.get(columnIndex)) ? 1 : 0)
+                    + (Objects.isNull(row3.get(columnIndex)) ? 1 : 0);
 
-                return Pair.create(idx, blanks);
+                return Pair.create(columnIndex, blanks);
             })
             .collect(
                 groupingBy(Pair::getRight,
@@ -96,11 +104,10 @@ record Ticket(ArrayList<Integer> row1, ArrayList<Integer> row2, ArrayList<Intege
 
     /**
      * Checks that there are no invalid columns (w/ 3 blanks), and if there are modify the ticket to prevent it.
-     * Reorders the column's items so that they are show on an ascending order
      *
      * @param pool available numbers for filling the ticket
      * @param random RNG
-     * @return the ticket received, only returned to enable a fluent API
+     * @return this, only returned to enable a fluent API
      */
     Ticket balanceTicket(final Map<Integer, LinkedList<Integer>> pool, final Random random) {
         final var freqOfBlanksPerColumn = getFreqOfBlanksPerColumn();
@@ -127,7 +134,7 @@ record Ticket(ArrayList<Integer> row1, ArrayList<Integer> row2, ArrayList<Intege
                     // Pick column to poke a blank
                     int columnToModify = unmodifiableColumns.stream().findFirst().orElseThrow();
 
-                    // If the random column is one of not-to-be-modified or the row is already null on it
+                    // If the random column is one of not-to-be-modified or the row is already null at this index
                     while (unmodifiableColumns.contains(columnToModify) || Objects.isNull( row.get(columnToModify) )) {
                         columnToModify = random.nextInt(0, 9);
                     }
@@ -159,7 +166,34 @@ record Ticket(ArrayList<Integer> row1, ArrayList<Integer> row2, ArrayList<Intege
                 });
         }
 
-        // TODO: order columns
+        return this;
+    }
+
+    /**
+     * Reorders the column's items so that they are shown on an ascending order
+     *
+     * @return this, only returned to enable a fluent API
+     */
+    Ticket sortColumns() {
+        COLUMN_INDEXES
+            .forEach(columnIndex -> {
+                final var rows = Arrays.asList(row1, row2, row3);
+
+                final var columnValues = rows
+                    .stream()
+                    .map(row -> row.get(columnIndex))
+                    .filter(Objects::nonNull) // NULL values are not reordered
+                    .sorted()
+                    .collect(toCollection(LinkedList::new));
+
+                for (int i = 0; !columnValues.isEmpty(); i++) {
+                    final var row = rows.get(i);
+
+                    if (Objects.nonNull(row.get(columnIndex))) {
+                        row.set(columnIndex, columnValues.removeFirst());
+                    }
+                }
+            });
 
         return this;
     }

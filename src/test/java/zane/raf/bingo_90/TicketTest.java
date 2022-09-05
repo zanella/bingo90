@@ -3,9 +3,7 @@ package zane.raf.bingo_90;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.LinkedList;
-import java.util.List;
 import java.util.Map;
-import java.util.Objects;
 import java.util.Random;
 import java.util.Set;
 import java.util.function.Supplier;
@@ -14,7 +12,8 @@ import java.util.stream.IntStream;
 import org.junit.jupiter.api.Test;
 
 import static java.util.stream.Collectors.toCollection;
-import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static zane.raf.bingo_90.Ticket.fillRow;
 
 class TicketTest implements Common {
@@ -66,8 +65,30 @@ class TicketTest implements Common {
 
         final var unbalancedTicket = new Ticket(f.get(), f.get(), f.get());
 
+        verifyTicketRows(unbalancedTicket);
         assertEquals(3, Collections.max(unbalancedTicket.getFreqOfBlanksPerColumn().keySet()));
 
-        verifyTicket( unbalancedTicket.balanceTicket(pool, new Random()) );
+        final var balancedTicket = unbalancedTicket.balanceTicket(pool, new Random());
+
+        verifyTicketIsBalanced(balancedTicket);
+    }
+
+    @Test
+    void testSortColumns() {
+        final var pool = Pool.create();
+        final var random = new Random();
+
+        final var ticket =  new Ticket(fillRow(pool), fillRow(pool), fillRow(pool))
+            .balanceTicket(pool, random);
+
+        ticket.row1().set(0, 9);
+        ticket.row2().set(0, null);
+        ticket.row3().set(0, 7);
+
+        verifyColumnsOrdering(ticket.sortColumns());
+
+        assertEquals(7, ticket.row1().get(0));
+        assertNull(ticket.row2().get(0));
+        assertEquals(9, ticket.row3().get(0));
     }
 }
