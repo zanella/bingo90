@@ -22,7 +22,7 @@ abstract class Pool {
      * @param space The list to be shuffled
      * @return A shuffled copy of the received list
      */
-    private static LinkedList<Integer> shuffleList(final List<Integer> space) {
+    static LinkedList<Integer> shuffleList(final List<Integer> space) {
         final var l = new LinkedList<>(space);
 
         Collections.shuffle(l);
