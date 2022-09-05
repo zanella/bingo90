@@ -5,14 +5,12 @@ import java.util.List;
 import java.util.Map;
 import java.util.Random;
 import java.util.stream.Collectors;
-import java.util.stream.IntStream;
 
 record Strip(List<Ticket> tickets) {
     static Strip of(final Map<Integer, LinkedList<Integer>> pool, final Random random) {
-        final var l = IntStream
-            .range(0, 6)
-            .mapToObj(i -> Ticket.of(pool, random))
-            .toList();
+        final var l = new LinkedList<Ticket>();
+
+        for (int i = 0; i < 6; i++) { l.add( Ticket.of(pool, random) ); }
 
         return new Strip(l);
     }

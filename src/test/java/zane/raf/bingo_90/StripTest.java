@@ -13,7 +13,7 @@ class StripTest implements Common {
     @Test
     void testGenerateStrip() {
         IntStream
-            .range(0, 100_000)
+            .range(0, PERFORMANCE_TEST_NUMBER_OF_LOOPS * 10)
             .parallel()
             .forEach(i -> {
                 final var pool = Pool.create();
@@ -22,9 +22,7 @@ class StripTest implements Common {
 
                 strip
                     .tickets()
-                    .forEach(this::verifyTicket);
-
-                // System.out.println(strip);
+                    .forEach(this::verifyTicketIsValid);
 
                 assertEquals(0, pool.values().stream().mapToInt(LinkedList::size).sum());
             });
@@ -32,9 +30,19 @@ class StripTest implements Common {
 
     @Test
     void testGenerateStripExecutionTime() {
+        // Warmup
+        final long warmupStart = System.currentTimeMillis();
+
+        for (int i = 0; i < PERFORMANCE_TEST_NUMBER_OF_LOOPS; i++) { generateStrip(); }
+
+        final var warmupElapsed = System.currentTimeMillis() - warmupStart;
+
+        assertTrue(warmupElapsed < 1000, "Took too long: " + warmupElapsed + "ms");
+
+        // Probably JIT'ed
         final long start = System.currentTimeMillis();
 
-        for (int i = 0; i < 10_000; i++) { generateStrip(); }
+        for (int i = 0; i < PERFORMANCE_TEST_NUMBER_OF_LOOPS; i++) { generateStrip(); }
 
         final var elapsed = System.currentTimeMillis()- start;
 

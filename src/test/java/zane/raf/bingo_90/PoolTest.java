@@ -11,7 +11,7 @@ import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.*;
 
-class PoolTest {
+class PoolTest implements Common {
 
     @Test
     void testShuffleList() {
@@ -42,11 +42,16 @@ class PoolTest {
 
     @Test
     void testCreatePerformance() {
+        // warmup
+        for (int i = 0; i < PERFORMANCE_TEST_NUMBER_OF_LOOPS; i++) { Pool.create(); }
+
         final long start = System.currentTimeMillis();
 
-        for (int i = 0; i < 10_000; i++) { Pool.create(); }
+        for (int i = 0; i < PERFORMANCE_TEST_NUMBER_OF_LOOPS; i++) { Pool.create(); }
 
-        final var elapsed = System.currentTimeMillis()- start;
+        final var elapsed = System.currentTimeMillis() - start;
+
+        System.out.println("elapsed: " + elapsed);
 
         assertTrue(elapsed < 100, "Took too long: " + elapsed + "ms");
     }
