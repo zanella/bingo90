@@ -7,6 +7,10 @@ import java.util.Random;
 import java.util.stream.Collectors;
 
 record Strip(List<Ticket> tickets) {
+    static Strip create() {
+        return Strip.of(Pool.create(), new Random());
+    }
+
     static Strip of(final Map<Integer, LinkedList<Integer>> pool, final Random random) {
         final var l = new LinkedList<Ticket>();
 

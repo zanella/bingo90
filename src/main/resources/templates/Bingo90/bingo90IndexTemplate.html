@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <title>bingo90</title>
+
+    <script type="application/javascript">
+        function displayTicket(ticket) {
+            const ticketDiv = document.createElement('div')
+
+            ticketDiv.classList.add('ticket')
+
+            for (let i = 1; i <= 3; i++) {
+                const row = ticket['row' + i]
+
+                const rowDiv = document.createElement('div')
+                rowDiv.classList.add('row')
+
+                for (let j = 0; j < 9; j++) {
+                    const cellDiv = document.createElement('div')
+
+                    cellDiv.classList.add('cell')
+
+                    cellDiv.textContent = row[j]
+
+                    rowDiv.append(cellDiv)
+                }
+
+                ticketDiv.append(rowDiv)
+            }
+
+            document.getElementById('ticketsContainer').append(ticketDiv)
+        }
+
+        function fetchStrip() {
+            fetch('/bingo90/api/strip')
+                .then((response) => response.json())
+                .then((data) => {
+                    document.getElementById('ticketsContainer').innerHTML = ''
+
+                    for (let ticket of data.tickets) {
+                        displayTicket(ticket)
+                    }
+                })
+        }
+    </script>
+
+    <style>
+        body {
+            /* max-width: max-content;
+            margin: auto; */
+        }
+
+        #ticketsContainer {
+            display: flex;
+            flex-direction: row;
+            flex-wrap: wrap;
+            gap: 16px;
+            width: 75%;
+            margin: auto;
+        }
+
+        .ticket {
+            display: flex;
+            flex-direction: column;
+            width: 50%;
+
+            border-top: 1px solid black;
+            border-left: 1px solid black;
+        }
+
+        .row {
+            display: flex;
+            flex-direction: row;
+            flex-wrap: nowrap;
+            border-bottom: 1px solid black;
+        }
+
+        .cell {
+            width: 11.1%;
+            border-right: 1px solid black;
+
+            display: flex;
+            justify-content: center;
+        }
+    </style>
+</head>
+
+<body>
+    <h1> Bingo 90 </h1>
+
+    <button type="button" onclick="fetchStrip()">Generate Strip</button>
+
+    <hr />
+
+    <div id="ticketsContainer"></div>
+</body>
+
+</html>

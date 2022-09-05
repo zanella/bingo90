@@ -7,7 +7,6 @@ import java.util.stream.IntStream;
 import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.*;
-import static zane.raf.bingo_90.Bingo90.generateStrip;
 
 class StripTest implements Common {
     @Test
@@ -33,7 +32,7 @@ class StripTest implements Common {
         // Warmup
         final long warmupStart = System.currentTimeMillis();
 
-        for (int i = 0; i < PERFORMANCE_TEST_NUMBER_OF_LOOPS; i++) { generateStrip(); }
+        for (int i = 0; i < PERFORMANCE_TEST_NUMBER_OF_LOOPS; i++) { Strip.create(); }
 
         final var warmupElapsed = System.currentTimeMillis() - warmupStart;
 
@@ -42,7 +41,7 @@ class StripTest implements Common {
         // Probably JIT'ed
         final long start = System.currentTimeMillis();
 
-        for (int i = 0; i < PERFORMANCE_TEST_NUMBER_OF_LOOPS; i++) { generateStrip(); }
+        for (int i = 0; i < PERFORMANCE_TEST_NUMBER_OF_LOOPS; i++) { Strip.create(); }
 
         final var elapsed = System.currentTimeMillis()- start;
 
