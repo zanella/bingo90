@@ -1,5 +1,30 @@
 # bingo90 Project
 
+## Requirements
+ - Java 17
+ - Maven 3
+
+## How to use
+
+Choose one of the options below on how to run it (`quarkus dev`, native executable, ...) and then hit the bingo 90 URL:
+
+ - http://localhost:9000/bingo90
+
+Or the API:
+
+ - http://localhost:9000/bingo90/api/strip
+
+## Algorithm
+
+The Pool class is responsible for generating the available numbers for filling the Tickets, they are shuffled so that 
+the ticket-filling part can just pick the "next" and it's not sequential.
+
+The Tickets are generated fully valid, meaning: all rows and columns comply with the 
+constraints (e.g. no 3 nulls in a column).
+
+The Strip creation generates 6 tickets, which means there's nothing left in the Pool in the end.
+
+## Framework 
 This project uses Quarkus, the Supersonic Subatomic Java Framework.
 
 If you want to learn more about Quarkus, please visit its website: https://quarkus.io/ .
@@ -11,7 +36,7 @@ You can run your application in dev mode that enables live coding using:
 ./mvnw compile quarkus:dev
 ```
 
-> **_NOTE:_**  Quarkus now ships with a Dev UI, which is available in dev mode only at http://localhost:8080/q/dev/.
+> **_NOTE:_**  Quarkus now ships with a Dev UI, which is available in dev mode only at http://localhost:9000/q/dev/.
 
 ## Packaging and running the application
 
