@@ -51,19 +51,33 @@
             margin: auto; */
         }
 
+        .headerContainer {
+            margin: auto;
+            width: 50%;
+            text-align: center;
+        }
+
+        button {
+            border-radius: 25px;
+            background-color: blue;
+            color: white;
+            font-weight: bold;
+        }
+
         #ticketsContainer {
             display: flex;
             flex-direction: row;
             flex-wrap: wrap;
+            justify-content: center;
             gap: 16px;
-            width: 75%;
+            width: 80%;
             margin: auto;
         }
 
         .ticket {
             display: flex;
             flex-direction: column;
-            width: 50%;
+            width: 45%;
 
             border-top: 1px solid black;
             border-left: 1px solid black;
@@ -87,9 +101,11 @@
 </head>
 
 <body>
-    <h1> Bingo 90 </h1>
+    <div class="headerContainer">
+        <h1> Bingo 90 </h1>
 
-    <button type="button" onclick="fetchStrip()">Generate Strip</button>
+        <button type="button" onclick="fetchStrip()">Generate Strip</button>
+    </div>
 
     <hr />
 

@@ -43,7 +43,7 @@ class StripTest implements Common {
 
         for (int i = 0; i < PERFORMANCE_TEST_NUMBER_OF_LOOPS; i++) { Strip.create(); }
 
-        final var elapsed = System.currentTimeMillis()- start;
+        final var elapsed = System.currentTimeMillis() - start;
 
         assertTrue(elapsed < 1000, "Took too long: " + elapsed + "ms");
     }
