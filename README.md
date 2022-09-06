@@ -9,6 +9,7 @@
 Choose one of the options below on how to run it (`quarkus dev`, native executable, ...) and then hit the bingo 90 URL:
 
  - http://localhost:9000/bingo90
+ - Click the blue button
 
 Or the API:
 
@@ -23,6 +24,9 @@ The Tickets are generated fully valid, meaning: all rows and columns comply with
 constraints (e.g. no 3 nulls in a column).
 
 The Strip creation generates 6 tickets, which means there's nothing left in the Pool in the end.
+
+It (Strip) is created in one pass, since the Tickets are all generated as valid they use the exact amount of numbers 
+they have to, which means that the last ticket creation only has enough (90 - (15 * 5)) numbers in the Pool.
 
 ## Framework 
 This project uses Quarkus, the Supersonic Subatomic Java Framework.
