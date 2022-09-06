@@ -52,12 +52,14 @@ record Ticket(ArrayList<Integer> row1, ArrayList<Integer> row2, ArrayList<Intege
         final var minPoolSize = new AtomicInteger(Integer.MAX_VALUE);
         for (int i = 0; i < 9; i++) { minPoolSize.set( Math.min(minPoolSize.get(), pool.get(i).size()) ); }
 
-        pool
-            .entrySet()
-            .stream()
-            .filter(e -> ((e.getValue().size() - minPoolSize.get()) >= 1) )
-            .sorted((x, y) -> Integer.compare(y.getValue().size(), x.getValue().size())) // inverted, larger pools first
-            .forEach(e -> columnsToFill.addFirst(e.getKey()));
+        if (minPoolSize.get() < 8) { // If not the first 2 tickets, give preference to the unused pools
+            pool
+                .entrySet()
+                .stream()
+                .filter(e -> ((e.getValue().size() - minPoolSize.get()) >= 1) )
+                .sorted((x, y) -> Integer.compare(y.getValue().size(), x.getValue().size())) // inverted, larger pools first
+                .forEach(e -> columnsToFill.addFirst(e.getKey()));
+        }
 
         new LinkedHashSet<>(columnsToFill) // gets rid of repeated columns
             .stream()
