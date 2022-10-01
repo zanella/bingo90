@@ -4,9 +4,22 @@
  - Java 17
  - Maven 3
 
+## Algorithm
+
+The Pool class is responsible for generating the available numbers for filling the Tickets, they are shuffled so that
+the ticket-filling part can just pick the "next" and it's not sequential.
+
+The Tickets are generated fully valid, meaning: all rows and columns comply with the
+constraints (e.g. no 3 nulls in a column).
+
+The Strip creation generates 6 tickets, which means there's nothing left in the Pool in the end.
+
+It (Strip) is created in one pass, since the Tickets are all generated as valid they use the exact amount of numbers
+they have to, which means that the last ticket creation only has enough (90 - (15 * 5)) numbers in the Pool.
+
 ## How to use
 
-Choose one of the options below on how to run it (`quarkus dev`, native executable, ...) and then hit the bingo 90 URL:
+Choose one of the options below on how to run it (`fast-jar` (fastest), `quarkus dev`, native executable, ...) and then hit the bingo 90 URL:
 
  - http://localhost:9000/bingo90
  - Click the blue button
@@ -15,27 +28,9 @@ Or the API:
 
  - http://localhost:9000/bingo90/api/strip
 
-## Algorithm
-
-The Pool class is responsible for generating the available numbers for filling the Tickets, they are shuffled so that 
-the ticket-filling part can just pick the "next" and it's not sequential.
-
-The Tickets are generated fully valid, meaning: all rows and columns comply with the 
-constraints (e.g. no 3 nulls in a column).
-
-The Strip creation generates 6 tickets, which means there's nothing left in the Pool in the end.
-
-It (Strip) is created in one pass, since the Tickets are all generated as valid they use the exact amount of numbers 
-they have to, which means that the last ticket creation only has enough (90 - (15 * 5)) numbers in the Pool.
-
-## Framework 
-This project uses Quarkus, the Supersonic Subatomic Java Framework.
-
-If you want to learn more about Quarkus, please visit its website: https://quarkus.io/ .
-
 ## Running the application in dev mode
 
-You can run your application in dev mode that enables live coding using:
+You can run your application in dev mode that enables live-coding using:
 ```shell script
 ./mvnw compile quarkus:dev
 ```
@@ -75,11 +70,3 @@ Or, if you don't have GraalVM installed, you can run the native executable build
 You can then execute your native executable with: `./target/bingo90-1.0.0-SNAPSHOT-runner`
 
 If you want to learn more about building native executables, please consult https://quarkus.io/guides/maven-tooling.
-
-## Provided Code
-
-### RESTEasy Reactive
-
-Easily start your Reactive RESTful Web Services
-
-[Related guide section...](https://quarkus.io/guides/getting-started-reactive#reactive-jax-rs-resources)
