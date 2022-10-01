@@ -36,7 +36,7 @@ class StripTest implements Common {
 
         final var warmupElapsed = System.currentTimeMillis() - warmupStart;
 
-        assertTrue(warmupElapsed < 1000, "Took too long: " + warmupElapsed + "ms");
+        assertTrue(warmupElapsed < 2000, "Took too long: " + warmupElapsed + "ms");
 
         // Probably JIT'ed
         final long start = System.currentTimeMillis();

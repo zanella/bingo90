@@ -22,6 +22,21 @@ public class Bingo90 {
         return Strip.create();
     }
 
+    @GET
+    @Path("/api/10k")
+    @Produces(MediaType.APPLICATION_JSON)
+    public Long generate10kStrip() {
+        final var start = System.currentTimeMillis();
+
+        for (int i = 0; i < 10_000; i++) { Strip.create(); }
+
+        final var elapsed = System.currentTimeMillis() - start;
+
+        System.out.println("Elapsed: " + elapsed);
+
+        return elapsed;
+    }
+
     ///////////////////////////////////////////////////////////////////////////
 
     @CheckedTemplate
